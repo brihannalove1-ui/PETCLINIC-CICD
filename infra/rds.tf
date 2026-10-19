@@ -1,10 +1,11 @@
+
 resource "random_password" "db" {
   length  = 24
   special = false
 }
 
 resource "aws_secretsmanager_secret" "db" {
-  name = "${var.project_name}/${var.environment}/db"
+  name = "petclinic/prod/db"
 }
 
 resource "aws_secretsmanager_secret_version" "db" {

@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk 
+FROM eclipse-temurin:25-jdk
 
 RUN groupadd -r petclinic && useradd -r -g petclinic petclinic
 
