@@ -24,23 +24,22 @@ env:
   ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
   ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
 
-jobs:
+ jobs:
   gitleaks:
     name: Gitleaks Secret Scan
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
+ 
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            build:
+  build:
     name: Build
     runs-on: ubuntu-latest
     needs: gitleaks
@@ -66,3 +65,4 @@ jobs:
           name: app-jar
           path: target/*.jar
           retention-days: 1
+          
