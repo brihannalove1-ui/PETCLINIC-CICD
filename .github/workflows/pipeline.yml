@@ -119,77 +119,24 @@ jobs:
           retention-days: 7
 
   
-  sonarQube-scan:
-    name: SonarCloud Scan
-    runs-on: ubuntu-latest
-    needs: test
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: temurin
-          cache: maven
-
-      - name: Validate SonarCloud configuration
+      - name: Run SonarCloud analysis
         shell: bash
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
         run: |
-          set -e
+          set -euo pipefail
 
-          if [[ -z "$SONAR_TOKEN" ]]; then
-            echo "::error::SONAR_TOKEN secret is missing or unavailable."
-            exit 1
-          fi
+          SONAR_PROJECT_KEY="$(printf '%s' "$SONAR_PROJECT_KEY" | tr -d '\r\n' | xargs)"
+          SONAR_ORGANIZATION="$(printf '%s' "$SONAR_ORGANIZATION" | tr -d '\r\n' | xargs)"
 
-          if [[ -z "$SONAR_PROJECT_KEY" ]]; then
-            echo "::error::SONAR_PROJECT_KEY repository variable is missing."
-            exit 1
-          fi
+          echo "SonarCloud project key: $SONAR_PROJECT_KEY"
+          echo "SonarCloud organization: $SONAR_ORGANIZATION"
 
-          if [[ -z "$SONAR_ORGANIZATION" ]]; then
-            echo "::error::SONAR_ORGANIZATION repository variable is missing."
-            exit 1
-          fi
-
-          echo "All required SonarCloud settings are present."
-
-      - name: Compile project
-        run: mvn -B clean compile
-
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: |
-            ${{ runner.os }}-sonar
-
-      - name: Run SonarCloud analysis
-        uses: SonarSource/sonarqube-scan-action@v4
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: >
-            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
-            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+          mvn -B clean verify \
+            org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            "-Dsonar.projectKey=$SONAR_PROJECT_KEY" \
+            "-Dsonar.organization=$SONAR_ORGANIZATION" \
             -Dsonar.host.url=https://sonarcloud.io
-            -Dsonar.java.binaries=target/classes
-
-      - name: Check SonarCloud Quality Gate
-        uses: SonarSource/sonarqube-quality-gate-action@v1
-        timeout-minutes: 5
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          pollingTimeoutSec: 300
